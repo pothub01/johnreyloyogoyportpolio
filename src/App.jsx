@@ -1,155 +1,104 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import SampleInvitation from './samples/SampleInvitation';
 
-const pages = [
-  { id: 'home', label: 'home' },
-  { id: 'about', label: 'about' },
-  { id: 'skills', label: 'skills' },
-  { id: 'projects', label: 'projects' },
-  { id: 'contact', label: 'contact' },
+const products = [
+  { id: 1, name: 'The Olive Garden', type: 'Wedding', price: 28, image: 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=900&q=85', tone: 'olive', badge: 'Bestseller', sample: '/samples/olive-garden' },
+  { id: 2, name: 'Sunday in Capri', type: 'Wedding', price: 32, image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?auto=format&fit=crop&w=900&q=85', tone: 'blue', badge: 'New', sample: '/samples/sunday-in-capri' },
+  { id: 3, name: 'A Little Wild', type: 'Birthday', price: 18, image: 'https://images.unsplash.com/photo-1530103862676-de8c9debad1d?auto=format&fit=crop&w=900&q=85', tone: 'peach', badge: null },
+  { id: 4, name: 'Rattan & Sun', type: 'Baby shower', price: 22, image: 'https://images.unsplash.com/photo-1513159446162-54eb8bdaa79b?auto=format&fit=crop&w=900&q=85', tone: 'sand', badge: 'Popular' },
+  { id: 5, name: 'Midnight Toast', type: 'Celebration', price: 24, image: 'https://images.unsplash.com/photo-1527529482837-4698179dc6ce?auto=format&fit=crop&w=900&q=85', tone: 'night', badge: null, sample: '/samples/midnight-toast' },
+  { id: 6, name: 'Petal Notes', type: 'Wedding', price: 26, image: 'https://images.unsplash.com/photo-1465495976277-4387d4b0e4a6?auto=format&fit=crop&w=900&q=85', tone: 'rose', badge: null },
 ];
 
-const experience = [
-  ['Ongoing', 'Full-Stack Product Builds', 'Independent', 'Designing and shipping complete web applications — storefronts, booking flows, admin dashboards, and backend automation — using Next.js, TypeScript, Tailwind, and Supabase.'],
-  ['Current', 'IT Specialist', 'Linkage Foods Venture Corporation', 'Supporting day-to-day IT operations — systems, network, and hardware — across the organization.'],
-  ['Previously', 'Quality Control', 'Integrated Computer Systems Inc.', 'Worked on quality control processes for computer hardware and systems.'],
-  ['Internship', 'IT Intern', 'LTO Taytay', 'Gained hands-on experience supporting government office IT operations.'],
-  ['Education', 'B.S. Computer Engineering', 'Graduate', 'Foundation in hardware systems, networks, and engineering problem-solving.'],
-];
+const categories = ['All designs', 'Wedding', 'Birthday', 'Baby shower', 'Celebration'];
 
-const skillGroups = {
-  'product & web development': ['Next.js / React', 'TypeScript', 'Tailwind CSS', 'Supabase (DB, auth, storage)'],
-  'systems & networking': ['Windows Server / AD', 'Network troubleshooting', 'Hardware diagnostics', 'LAN/WAN setup'],
-  'support & operations': ['Help desk / end-user support', 'IT asset management', 'Quality control processes', 'Documentation'],
-};
+function Storefront() {
+  const [category, setCategory] = useState('All designs');
+  const [favorites, setFavorites] = useState([]);
+  const [preview, setPreview] = useState(null);
+  const [cart, setCart] = useState([]);
+  const [cartOpen, setCartOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [toast, setToast] = useState('');
 
-const projects = [
-  {
-    id: 'featured',
-    filter: 'product',
-    title: 'Luxury Dress Rental Platform',
-    eyebrow: 'featured — full-stack build',
-    summary: 'A full-stack Next.js rental marketplace for a boutique dress rental brand — storefront, booking, admin tools, and backend automation.',
-    tags: ['Next.js', 'TypeScript', 'Tailwind', 'Supabase', 'Google Auth'],
-    description: 'Built a complete rental platform end to end: customers browse a branded catalog, pick rental dates, sign in with Google, upload a payment receipt, and submit a booking. Supabase handles data storage and availability checks, while an admin dashboard manages inventory, bookings, and listings.',
-    bullets: ['Branded storefront with category browsing', 'Date-based booking with rental logic', 'Google sign-in for customer access', 'Payment receipt upload for confirmation', 'Admin dashboard for bookings & inventory', 'Automated confirmation & reminder emails'],
-  },
-  { id: 'LOG—01', filter: 'systems', title: 'Network infrastructure upgrade', tags: ['networking', 'hardware'], description: 'Planned and supported infrastructure improvements focused on reliability, maintainability, and reducing operational downtime.' },
-  { id: 'LOG—02', filter: 'systems', title: 'IT asset tracking system', tags: ['operations', 'documentation'], description: 'Created a clearer approach to tracking equipment and inventory so teams can locate assets and keep records current.' },
-  { id: 'LOG—03', filter: 'systems', title: 'Help desk workflow improvement', tags: ['support', 'process'], description: 'Improved the flow of support requests with consistent documentation, prioritization, and follow-through.' },
-];
+  const visibleProducts = useMemo(() => category === 'All designs' ? products : products.filter((product) => product.type === category), [category]);
 
-function getInitialPage() {
-  const hash = window.location.hash.slice(1);
-  return pages.some((page) => page.id === hash) ? hash : 'home';
-}
-
-function App() {
-  const [activePage, setActivePage] = useState(getInitialPage);
-  const [theme, setTheme] = useState(() => localStorage.getItem('portfolio-theme') || 'light');
-  const [filter, setFilter] = useState('all');
-  const [featuredOpen, setFeaturedOpen] = useState(false);
-  const [phraseIndex, setPhraseIndex] = useState(0);
-  const [typed, setTyped] = useState('');
-
-  const visibleProjects = useMemo(
-    () => projects.filter((project) => filter === 'all' || project.filter === filter),
-    [filter],
-  );
-
-  useEffect(() => {
-    document.body.dataset.theme = theme;
-    localStorage.setItem('portfolio-theme', theme);
-  }, [theme]);
-
-  useEffect(() => {
-    const phrase = ['Keeping infrastructure running,', 'and shipping full products.'][phraseIndex];
-    let cursor = 0;
-    setTyped('');
-    const timer = window.setInterval(() => {
-      cursor += 1;
-      setTyped(phrase.slice(0, cursor));
-      if (cursor === phrase.length) window.clearInterval(timer);
-    }, 42);
-    return () => window.clearInterval(timer);
-  }, [phraseIndex]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => setPhraseIndex((index) => (index + 1) % 2), 3800);
-    return () => window.clearTimeout(timer);
-  }, [phraseIndex]);
-
-  const navigate = (id) => {
-    setActivePage(id);
-    window.history.replaceState(null, '', `#${id}`);
-    document.querySelector('main')?.scrollTo({ top: 0, behavior: 'smooth' });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+  const notify = (message) => {
+    setToast(message);
+    window.setTimeout(() => setToast(''), 2400);
   };
 
-  return (
-    <>
-      <div className="progress" aria-hidden="true" />
-      <div className="layout">
-        <aside className="sidebar">
-          <div className="sb-id">
-            <div className="sb-name">John Rey Loyogoy</div>
-            <div className="sb-role">IT Specialist &amp; Full-Stack Builder</div>
-          </div>
-          <nav className="sb-nav" aria-label="Primary navigation">
-            {pages.map((page, index) => (
-              <button className={`sb-link ${activePage === page.id ? 'active' : ''}`} key={page.id} onClick={() => navigate(page.id)}>
-                <span className="idx">0{index + 1}</span>{page.label}
-              </button>
-            ))}
-          </nav>
-          <div className="sb-foot">
-            <div className="status-line"><span className="status-dot" />available for opportunities</div>
-            <div className="status-line">Antipolo City, Rizal, PH</div>
-            <button className="theme-toggle" onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}>
-              <span>theme</span><span>{theme}</span>
-            </button>
-          </div>
-        </aside>
+  const addToCart = (product) => {
+    setCart((items) => [...items, product]);
+    setCartOpen(true);
+    notify(`${product.name} added to your bag`);
+  };
 
-        <main>
-          {activePage === 'home' && <Home navigate={navigate} typed={typed} />}
-          {activePage === 'about' && <About />}
-          {activePage === 'skills' && <Skills />}
-          {activePage === 'projects' && (
-            <Projects filter={filter} setFilter={setFilter} visibleProjects={visibleProjects} featuredOpen={featuredOpen} setFeaturedOpen={setFeaturedOpen} />
-          )}
-          {activePage === 'contact' && <Contact />}
-        </main>
-      </div>
-    </>
+  const toggleFavorite = (id) => setFavorites((items) => items.includes(id) ? items.filter((item) => item !== id) : [...items, id]);
+
+  return (
+    <div className="site-shell">
+      <div className="announcement">Complimentary envelope liners with every order this week <span>✦</span> Shop the collection <span>→</span></div>
+      <header className="header">
+        <button className="mobile-menu" onClick={() => setMenuOpen(!menuOpen)} aria-label="Open menu">☰</button>
+        <a className="brand" href="#top" aria-label="Vow and Vine home"><span>Vow</span><i>&amp;</i><span>Vine</span><small>INVITATION STUDIO</small></a>
+        <nav className={menuOpen ? 'nav open' : 'nav'}>
+          <a href="#shop" onClick={() => setMenuOpen(false)}>Shop invitations</a>
+          <a href="#how-it-works" onClick={() => setMenuOpen(false)}>How it works</a>
+          <a href="#about" onClick={() => setMenuOpen(false)}>Our story</a>
+        </nav>
+        <div className="header-actions">
+          <button aria-label="Search" onClick={() => notify('Search is coming soon')}>⌕</button>
+          <button aria-label="Favorites" onClick={() => notify(`${favorites.length} saved design${favorites.length === 1 ? '' : 's'}`)}>♡ <sup>{favorites.length || ''}</sup></button>
+          <button className="bag-button" onClick={() => setCartOpen(true)} aria-label="Open shopping bag">Bag <b>{cart.length}</b></button>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="hero">
+          <div className="hero-copy">
+            <p className="eyebrow">Thoughtful details for meaningful days</p>
+            <h1>Make it<br /><em>feel like you.</em></h1>
+            <p className="hero-text">Beautiful, modern invitations for the moments you’ll remember forever. Personalize in minutes, send with love.</p>
+            <div className="hero-buttons"><a className="button dark" href="#shop">Explore designs <span>↘</span></a><button className="text-button" onClick={() => notify('A design consultant will be in touch soon')}>Work with a designer <span>→</span></button></div>
+            <div className="hero-note"><span className="avatars">● ● ●</span><span>Trusted by 2,000+ joyful hosts</span></div>
+          </div>
+          <div className="hero-art">
+            <div className="sun-disc" />
+            <div className="hero-card card-back" />
+            <div className="hero-card card-front"><span>the</span><strong>Olive<br />Garden</strong><small>made for forever</small></div>
+            <div className="scribble">made<br />with<br /><i>love</i></div>
+            <span className="leaf leaf-one">❧</span><span className="leaf leaf-two">❧</span>
+          </div>
+        </section>
+
+        <section className="trust-row"><span>DESIGNED FOR THE DETAILS</span><span>✦</span><span>EDITABLE IN MINUTES</span><span>✦</span><span>DELIVERED WITH LOVE</span></section>
+
+        <section className="shop-section" id="shop">
+          <div className="section-heading"><div><p className="eyebrow">Find your feeling</p><h2>Invitations for<br /><em>every occasion.</em></h2></div><p>From first hellos to forever yeses,<br />there’s a little something here for you.</p></div>
+          <div className="filters">{categories.map((item) => <button key={item} className={category === item ? 'active' : ''} onClick={() => setCategory(item)}>{item}</button>)}</div>
+          <div className="product-grid">{visibleProducts.map((product) => <article className="product-card" key={product.id}>
+            <button className="favorite" onClick={() => toggleFavorite(product.id)} aria-label={`Save ${product.name}`}>{favorites.includes(product.id) ? '♥' : '♡'}</button>
+            <button className="product-image" onClick={() => setPreview(product)}><img src={product.image} alt="" /><span className={`tone tone-${product.tone}`}><small>{product.type}</small><strong>{product.name}</strong><i>you’re invited</i></span>{product.badge && <b className="badge">{product.badge}</b>}<span className="quick-view">Quick view ↗</span></button>
+            <div className="product-info"><div><h3>{product.name}</h3><p>{product.type} · from ${product.price}</p></div><button className="add-button" onClick={() => addToCart(product)}>＋</button></div>
+          </article>)}</div>
+          <button className="view-all" onClick={() => { setCategory('All designs'); notify('Showing all designs'); }}>View all invitations <span>→</span></button>
+        </section>
+
+        <section className="how-section" id="how-it-works"><div className="how-intro"><p className="eyebrow">Simple by design</p><h2>Your day.<br /><em>Your way.</em></h2><p>We believe the best invitations feel effortless. Pick a design you love, make it yours, and let the good times begin.</p></div><div className="steps"><div><span>01</span><h3>Choose your mood</h3><p>Browse our collection of artful templates, made for real-life celebrations.</p></div><div><span>02</span><h3>Make it personal</h3><p>Change the names, colors, wording, and every tiny detail in our easy editor.</p></div><div><span>03</span><h3>Send the joy</h3><p>Download, print, or send beautifully online. RSVP tracking included.</p></div></div></section>
+        <section className="story-section" id="about"><div className="story-image"><img src="https://images.unsplash.com/photo-1519225421980-715cb0215aed?auto=format&fit=crop&w=1200&q=85" alt="Flowers and stationery on a table" /></div><div className="story-copy"><p className="eyebrow">A little note from us</p><h2>Good things<br /><em>start with paper.</em></h2><p>Vow &amp; Vine began with a stack of handwritten notes and a belief that the smallest details can make people feel truly seen.</p><button className="text-button" onClick={() => notify('Thanks for getting to know us')}>Meet the studio <span>→</span></button></div></section>
+      </main>
+
+      <footer className="footer"><div className="brand"><span>Vow</span><i>&amp;</i><span>Vine</span><small>INVITATION STUDIO</small></div><p>For all of life’s lovely little reasons.</p><div><a href="#shop">Shop</a><a href="#how-it-works">FAQ</a><a href="#about">Instagram</a></div><small>© 2024 Vow &amp; Vine</small></footer>
+
+      {preview && <div className="modal-backdrop" onClick={() => setPreview(null)}><div className="preview-modal" onClick={(event) => event.stopPropagation()}><button className="close" onClick={() => setPreview(null)}>×</button><img src={preview.image} alt="" /><div><p className="eyebrow">{preview.type} invitation</p><h2>{preview.name}</h2><p>Fully editable template · starts at ${preview.price}</p><div className="preview-actions"><a className="button outline" href={preview.sample || '#'} target="_blank" rel="noreferrer">Open live sample <span>↗</span></a><button className="button dark" onClick={() => { addToCart(preview); setPreview(null); }}>Customize this design <span>→</span></button></div></div></div></div>}
+      {cartOpen && <div className="drawer-backdrop" onClick={() => setCartOpen(false)}><aside className="cart-drawer" onClick={(event) => event.stopPropagation()}><div className="drawer-head"><h2>Your bag <span>{cart.length}</span></h2><button onClick={() => setCartOpen(false)}>×</button></div>{cart.length ? <><div className="cart-items">{cart.map((item, index) => <div className="cart-item" key={`${item.id}-${index}`}><img src={item.image} alt="" /><div><h3>{item.name}</h3><p>{item.type} · ${item.price}</p></div></div>)}</div><div className="cart-total"><span>Estimated total</span><strong>${cart.reduce((total, item) => total + item.price, 0)}</strong></div><button className="button dark checkout" onClick={() => notify('Checkout is ready for your payment integration')}>Continue to checkout <span>→</span></button></> : <div className="empty-cart"><span>✦</span><p>Your bag is waiting<br />for something lovely.</p><a href="#shop" onClick={() => setCartOpen(false)}>Browse designs →</a></div>}</aside></div>}
+      {toast && <div className="toast">{toast} <span>✦</span></div>}
+    </div>
   );
 }
 
-function Home({ navigate, typed }) {
-  return <section className="page">
-    <div className="kicker">systems &amp; product</div>
-    <h1><span className="hero-typed">{typed}</span></h1>
-    <p className="lead">IT Specialist with a background in computer engineering and hardware quality control — and, more recently, a self-driven full-stack builder shipping complete web products end to end.</p>
-    <div className="panel">
-      {[['role', 'IT Specialist'], ['company', 'Linkage Foods Venture Corporation'], ['location', 'Antipolo City, Rizal, Philippines'], ['also building', 'Full-stack web products — Next.js, TypeScript, Supabase']].map(([key, value]) => <div className="panel-row" key={key}><div className="k">{key}</div><div>{value}</div></div>)}
-    </div>
-    <div className="cta-row"><button className="btn primary" onClick={() => navigate('projects')}>view projects</button><button className="btn" onClick={() => navigate('contact')}>get in touch</button></div>
-  </section>;
+export default function App() {
+  const samplePath = window.location.pathname.replace(/\/$/, '');
+  return samplePath.startsWith('/samples/') ? <SampleInvitation path={samplePath} /> : <Storefront />;
 }
-
-function About() {
-  return <section className="page"><div className="kicker">about</div><h2>Background</h2><div className="timeline">{experience.map(([date, role, org, description]) => <article className="tl-item" key={`${date}-${role}`}><div className="tl-date">{date}</div><div className="tl-role">{role}</div><div className="tl-org">{org}</div><div className="tl-desc">{description}</div></article>)}</div></section>;
-}
-
-function Skills() {
-  return <section className="page"><div className="kicker">capabilities</div><h2>Skills</h2><div className="skill-groups">{Object.entries(skillGroups).map(([group, skills]) => <div key={group}><div className="skill-group-title">{group}</div><div className="skill-grid">{skills.map((skill) => <div className="skill-cell" key={skill}>{skill}</div>)}</div></div>)}</div></section>;
-}
-
-function Projects({ filter, setFilter, visibleProjects, featuredOpen, setFeaturedOpen }) {
-  return <section className="page"><div className="kicker">selected work</div><h2>Projects</h2><div className="filter-row" role="group" aria-label="Filter projects">{[['all', 'all'], ['product', 'product & web'], ['systems', 'it & systems']].map(([value, label]) => <button className={`filter-chip ${filter === value ? 'active' : ''}`} key={value} onClick={() => setFilter(value)}>{label}</button>)}</div><div className="log">{visibleProjects.map((project) => project.id === 'featured' ? <article className={`featured ${featuredOpen ? 'open' : ''}`} key={project.id}><button className="featured-head" onClick={() => setFeaturedOpen(!featuredOpen)} aria-expanded={featuredOpen}><div><div className="featured-eyebrow">{project.eyebrow}</div><div className="featured-title">{project.title}</div><div className="featured-sub">{project.summary}</div><div className="tag-row">{project.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div><a className="project-link" href="https://luxe-lace-hershey.vercel.app/" target="_blank" rel="noreferrer" onClick={(event) => event.stopPropagation()}>view live project ↗</a></div><span className="chev" aria-hidden="true">＋</span></button>{featuredOpen && <div className="featured-body"><div className="featured-body-inner"><p className="feat-desc">{project.description}</p><ul className="feat-list">{project.bullets.map((bullet) => <li key={bullet}>{bullet}</li>)}</ul></div></div>}</article> : <article className="log-entry" key={project.id}><div className="log-id">{project.id}</div><div><div className="log-title">{project.title}</div><div className="log-tags">{project.tags.map((tag) => <span className="tag" key={tag}>{tag}</span>)}</div><div className="log-desc">{project.description}</div></div></article>)}</div></section>;
-}
-
-function Contact() {
-  return <section className="page"><div className="kicker">reach out</div><h2>Contact</h2><p className="lead contact-lead">Open to IT specialist, systems support, and full-stack development roles.</p><div className="contact-grid">{[['email', 'johnreyloyogoy@gmail.com', 'mailto:johnreyloyogoy@gmail.com'], ['phone', '+63 961 266 1652 · Viber / WhatsApp', 'tel:+639612661652'], ['linkedin', 'linkedin.com/in/john-rey-loyogoy-682425311', 'https://www.linkedin.com/in/john-rey-loyogoy-682425311?utm_source=share_via&utm_content=profile&utm_medium=member_ios'], ['location', 'Antipolo City, Rizal, Philippines']].map(([key, value, href]) => <div className="contact-row" key={key}><div className="k">{key}</div><div>{href ? <a href={href} target={key === 'linkedin' ? '_blank' : undefined} rel={key === 'linkedin' ? 'noreferrer' : undefined}>{value}</a> : value}</div></div>)}</div><footer className="page-footer">© {new Date().getFullYear()} John Rey Loyogoy</footer></section>;
-}
-
-export default App;
